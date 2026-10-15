@@ -1,3 +1,5 @@
+#!/usr/bin/python3.14
+
 # Ant Resource Collection Game
 #
 # To make ants and run game:
@@ -11,18 +13,16 @@
 from concurrent.futures import wait, ProcessPoolExecutor, ThreadPoolExecutor, TimeoutError
 import os
 import random
-import time
 import traceback
 
 # A. Import student strategies here
-from HorizontalStrat import HorizontalStrat
-from VerticalStrat import VerticalStrat
-from RandomStrat import RandomStrat
-from SmarterRandomStrat import SmarterRandomStrat
-from StraightHomeStrat import StraightHomeStrat
-from GridBuilderStrat import GridBuilderStrat
-from ScoutStrat import ScoutStrat
-from StarterStrat import StarterStrat
+from strategies.HorizontalStrat import HorizontalStrat 
+from strategies.VerticalStrat import VerticalStrat
+from strategies.RandomStrat import RandomStrat
+from strategies.SmarterRandomStrat import SmarterRandomStrat
+from strategies.StraightHomeStrat import StraightHomeStrat
+from strategies.GridBuilderStrat import GridBuilderStrat
+from strategies.ScoutStrat import ScoutStrat
     
 # B. Register strategy class names in team1/team2 tuples below, 3-5 ants per team
 team1 = (GridBuilderStrat, RandomStrat, SmarterRandomStrat, StraightHomeStrat, HorizontalStrat)
@@ -86,9 +86,12 @@ class Ant:
         self.symbol = symbol
         self.food = False
         self.alive = True
+
+        self.analytics = Analytics(self)
     
-    def die(self):
+    def die(self, round):
         self.alive = False
+        self.analytics.die(round)
 
     def act(self, vision):
         return self.strategy.one_step(self.x, self.y, vision, self.food)
@@ -105,27 +108,28 @@ class Ant:
     def __repr__(self):
         return self.symbol
 
-# game analytics - to be completed
-'''
+# game analytics
 class Analytics:
     def __init__(self, ant):
         self.ant = ant
-        self.actions = {"alive": 0, "dist": 0}
-        self.food = {"picked": 0, "dropped": 0, "dropped_home": 0}
-        self.conflicts = {"ants": 0, "food": 0, "walls": 0}
+        self.movement = {"roundDied": 0, "distTraveled": 0}
+        self.food = {"pickedUp": 0, "dropped": 0, "dropped_home": 0}
+        self.conflicts = {"antBounce": 0, "foodBounce": 0, "wallBounce": 0}
 
-    def ant_die (self, round):
-        self.actions["alive"] = round
+    def die (self, round):
+        self.movement["roundDied"] = round
 
-    def update_dist (self):
-        self.actions["dist"] += 1
+    def travel (self):
+        self.movement["distTraveled"] += 1
 
-    def update_food (self, dest):
-        self.actions[dest] += 1
+    def interact (self, type) :
+        self.food[type] += 1 
 
-    def update_conf (self, conf):
-        self.conflicts[conf] += 1        
-'''
+    def conflict (self, type):
+        self.conflicts[type] += 1        
+
+    def getAnalytics (self) :
+        return [self.movement, self.food, self.conflicts]
         
 # utility functions
 def is_open_cell(matrix, x, y, ant=''):
@@ -409,9 +413,9 @@ def generate_vision(matrix, x, y):
         vision.append(row)
     return vision
 
-def kill_ant(ant):
+def kill_ant(ant, round):
     print("Ant " + ant.symbol + " died.")
-    ant.die()
+    ant.die(round)
     matrix[ant.x][ant.y].ant = None
 
 # Thread/Process Mains
@@ -479,7 +483,7 @@ def game_loop(matrix, ants, config):
                 print("Error in " + str(a) + " when receiving messages: " + str(e))
                 if DEBUG:
                     print(traceback.format_exc())
-                kill_ant(a)
+                kill_ant(a, lap)
         team1_messages = []
         team2_messages = []
 
@@ -492,12 +496,12 @@ def game_loop(matrix, ants, config):
                 moves[a] = future.result(timeout=0.1)
             except TimeoutError:
                 print("Timeout waiting for one_step in " + str(a))
-                kill_ant(a)
+                kill_ant(a, lap)
             except Exception as e:
                 print("Error in one_step in " + str(a) + ": " + str(e))
                 if DEBUG:
                     print(traceback.format_exc())
-                kill_ant(a)
+                kill_ant(a, lap)
 
         # Parse moves
         proposed_moves = {}
@@ -516,7 +520,7 @@ def game_loop(matrix, ants, config):
             elif move[0] == "GET":
                 if len(move) != 2 or move[1] not in transform_xy:
                     print("Invalid GET in " + a.symbol + ": " + str(move))
-                    kill_ant(a)
+                    kill_ant(a, lap)
                     continue
                 elif not a.food: # Can't carry more than one!
                     target_x, target_y = transform_xy[move[1]](a.x, a.y)
@@ -529,7 +533,7 @@ def game_loop(matrix, ants, config):
             elif move[0] == "DROP":
                 if len(move) != 2 or move[1] not in transform_xy:
                     print("Invalid DROP in " + a.symbol + ": " + str(move))
-                    kill_ant(a)
+                    kill_ant(a, lap)
                     continue
                 elif a.food:
                     target_x, target_y = transform_xy[move[1]](a.x, a.y)
@@ -549,7 +553,7 @@ def game_loop(matrix, ants, config):
 
             elif move[0] != "PASS":
                 print("Invalid move from " + a.symbol + ": " + str(move))
-                kill_ant(a)
+                kill_ant(a, lap)
                 continue
 
             # Attempt to place this ant in next phase of simulation. Ants in conflict must go back
@@ -648,7 +652,7 @@ def game_loop(matrix, ants, config):
                     print("Error in " + a.symbol + " when sending messages: " + str(e))
                     if DEBUG:
                         print(traceback.format_exc())
-                    kill_ant(a)
+                    kill_ant(a, lap)
                     continue
 
                 if a.team == 1:
