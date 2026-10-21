@@ -1,4 +1,4 @@
-from AntStrategy import AntStrategy
+from strategies.AntStrategy import AntStrategy
 
 class VerticalStrat(AntStrategy):
     '''Move up and down within grid boundaries'''

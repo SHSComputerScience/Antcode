@@ -1,4 +1,4 @@
-from AntStrategy import AntStrategy
+from strategies.AntStrategy import AntStrategy
 
 class HorizontalStrat(AntStrategy):
     '''Move east and west within grid boundaries'''

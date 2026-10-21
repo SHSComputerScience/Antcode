@@ -58,10 +58,15 @@ This class is fully documented, so see `AntStrategy.py` for more details about t
 
 ## Running the Simulation
 First, add an import to the list of `AntStrategy` subclass imports in `main.py` to import your class.
+Make sure to match the `strategies.<classname>` pattern if you are keeping your class in the strategies folder.
 Then, find the two tuples called `team1` and `team2`.
 Change the contents of these so that they're the names of the 3-5 AntStrategy classes you want on each team.
 Each team must have the same number of ants. 
 If using CodeHS, click Run! If using something else, execute `main.py` (on the commandline: `$ python3 main.py`).
+
+### Analytics
+At the end of the game, statistics including item interactions and movement will be displayed per ant.
+Additionally, the top 3 ants in statistic will be ranked (highest value to lowest).
 
 ### Saving and Loading a Map from a File
 To test your ants under the same conditions,
