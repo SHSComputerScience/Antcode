@@ -129,7 +129,29 @@ class Analytics:
         self.conflicts[type] += 1        
 
     def __repr__ (self) :
-        return [self.movement, self.food, self.conflicts]
+        return str([self.movement, self.food, self.conflicts])
+
+    def getPrettyPrint(self) :
+        return {"roundDied": "Round Died", "distTraveled": "Distance Traveled", "pickedUp": "Food Picked Up", "dropped": "Food Dropped", "dropped_home": "Food Dropped at Home", "antBounce": "Ants Bounced", "getFoodBounce": "Food Gets Bounce", "dropFoodBounce": "Food Drops Bounced", "wallBounce": "Walls Bounced"}
+
+    def __str__(self) :
+
+        self.createStats()
+
+        out = ""
+        for key, value in self.getPrettyPrint().items() :
+            out += f"{value}: {self.stats[key]}\n"
+
+        return out
+
+    def __combine(self) :
+        return self.movement | self.food | self.conflicts
+
+    def getStats(self) :
+        return self.__combine()
+
+    def createStats(self) :
+        self.stats = self.__combine()
         
 # utility functions
 def is_open_cell(matrix, x, y, ant=''):
@@ -623,7 +645,7 @@ def game_loop(matrix, ants, config):
                     proposed_moves[(conflict_ant.x, conflict_ant.y)] = conflict_ant
                     
                     # track bounce analytic
-                    current_ant.analytics.conflict("antBonce")
+                    current_ant.analytics.conflict("antBounce")
                     
                     conflict_ant = next_conflict_ant
                 else:
@@ -752,11 +774,36 @@ def game_loop(matrix, ants, config):
         print("Winner: Tie")
         game_output += "WINNER TIE\n"
 
+    # print analytics
+    game_output += "==============================\n"
     print("\n==== Game Analytics ====\n")
+
+    print("\n==== Per Ant Analytics ====\n")
     for ant in antCopy :
 
         print("\nAnalytics for ant" + str(ant.symbol) + "\n")
-        print(ant.analytics)
+        print(str(ant.analytics))
+
+        game_output += f"\nstr(ant.symbol) : {str(ant.analytics)}"
+
+    print("\n==== Rankings ====\n")
+    for ant in antCopy : ant.analytics.createStats()
+    
+    stats = {}
+    for ant in ants :
+        for key in ant.analytics.stats :
+            stats.setdefault(key, []).append(ant)
+
+    for key in stats :
+        stats[key].sort(key = lambda ant: ant.analytics.stats[key], reverse = True)
+
+        prettyPrint = antCopy[0].analytics.getPrettyPrint()
+
+        # print out rankings 
+        print("\nTop Ants for " + prettyPrint[key] + "\n")
+        print(f"1. {stats[key][0]}")
+        print(f"2. {stats[key][1]}")
+        print(f"3. {stats[key][2]}")
 
     # Prompt user to save full game output
     save = input("Save game output? (yes/<enter>) ")
@@ -764,6 +811,8 @@ def game_loop(matrix, ants, config):
         filename = input("Enter filename: ")
         with open(filename, "w+") as outfile:
             outfile.write(game_output)
+
+
 
 def prompt_save_map(initial_matrix):
     """Prompt user to save map for a future game"""

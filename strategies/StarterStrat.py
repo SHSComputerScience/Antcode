@@ -1,4 +1,4 @@
-from AntStrategy import AntStrategy
+from strategies.AntStrategy import AntStrategy
 import random
 
 class StarterStrat(AntStrategy):
