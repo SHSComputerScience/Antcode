@@ -58,7 +58,10 @@ This class is fully documented, so see `AntStrategy.py` for more details about t
 
 ## Running the Simulation
 First, add an import to the list of `AntStrategy` subclass imports in `main.py` to import your class.
-Make sure to match the `strategies.<classname>` pattern if you are keeping your class in the strategies folder.
+Make sure to match the `strategies.<classname>` pattern if you are keeping your class in the strategies folder,
+or if you are keeping it in the root directory, import `AntStrategy` from the strategies folder. 
+(The reason for getting `AntStrategy` by accessing a folder you are already hypothetically in is because python evaluates
+those imports from the directory of execution of main.py).
 Then, find the two tuples called `team1` and `team2`.
 Change the contents of these so that they're the names of the 3-5 AntStrategy classes you want on each team.
 Each team must have the same number of ants. 
